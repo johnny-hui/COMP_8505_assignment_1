@@ -1,36 +1,35 @@
-import sys
 import constants
+import sys
+from os import path
+from program2_utils import encode, encrypt, payload_to_binary
 from PIL import Image
 
 
 def do_program_2(img_dir: str,
                  number_of_lsb_to_replace_per_pixel: int = 0,
-                 payload_size: int = 0):
+                 payload: str = ""):
     try:
         img = Image.open(img_dir)
-        width, height = img.size
+        max_bits_supported_by_lsb = img.height * img.width * constants.LSB_MINIMUM
 
-        # Create new image map of original image
-        new_image = Image.new("RGB", (width, height), "white")
-        pixels = new_image.load()
+        # Perform Encryption of Payload
+        encrypted_key, encrypted_payload = encrypt(payload)
 
-        # Transform to grayscale (Starting at (0,0))
-        for x in range(width):
-            for y in range(height):
-                # Get Pixel
-                pixel = img.getpixel((x, y))
+        # Convert Encrypted Payload to Binary
+        encrypted_payload_in_binary = payload_to_binary(encrypted_payload, max_bits_supported_by_lsb)
 
-                # Get R, G, B values (These are int from 0 to 255)
-                red = pixel[0]
-                green = pixel[1]
-                blue = pixel[2]
+        # Perform LSB Encoding
+        encode(img, encrypted_payload_in_binary)
 
-                # Transform to grayscale
-                gray = (red * 0.299) + (green * 0.587) + (blue * 0.114)
+        # Save the new image
+        filename, _ = path.splitext(img_dir)
+        filename += '_lsb' + constants.PNG_EXTENSION
+        img.save(filename, constants.PNG_FORMAT)
 
-                # Set Pixel in new image
-                pixels[x, y] = (int(gray), int(gray), int(gray))
-
-        new_image.save("ass.png", "png")
+        return encrypted_key
     except OSError:
         sys.exit(constants.OS_ERROR_MSG)
+
+
+if __name__ == '__main__':
+    do_program_2("../Pictures/24_bit.png", 1, "I am Vladimir the hacker")

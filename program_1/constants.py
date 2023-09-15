@@ -7,4 +7,7 @@ PAYLOAD_SIZE_EXCEEDED_ERROR = "[+] ERROR: Payload size exceeds maximum possible 
 MAX_BIT_DEPTH = 24
 LSB_MINIMUM = 3
 ZERO = 0
-
+PNG_FORMAT = "PNG"
+PNG_FORMAT_RGB = "RGB"
+NOT_PNG_ERROR = "[+] ERROR: This program only supports images with PNG format!"
+NOT_PNG_24_BIT_ERROR = "[+] ERROR: This program only supports 24 bit (RGB) PNG images!"
