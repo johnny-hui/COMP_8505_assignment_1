@@ -13,7 +13,7 @@ def do_program_2():
 
         # Open Cover Image
         cover_img = Image.open(cover_image_dir)
-        max_bits_supported_by_lsb = cover_img.height * cover_img.width * constants.LSB_MINIMUM
+        max_bits_supported = cover_img.height * cover_img.width * number_of_lsb_to_replace_per_pixel
 
         # Declaring Variables
         encrypted_key = ""
@@ -24,15 +24,19 @@ def do_program_2():
             encrypted_key, encrypted_payload = encrypt_string(string_payload)
 
             # Convert Encrypted Payload to Binary
-            encrypted_payload_in_binary = payload_to_binary(encrypted_payload, max_bits_supported_by_lsb)
+            encrypted_payload_in_binary = payload_to_binary(encrypted_payload, max_bits_supported)
 
             # Perform LSB Encoding
             encode(cover_img, encrypted_payload_in_binary)
 
+            # RETURN: Encryption Key
+
         if len(image_payload_dir) is not constants.ZERO:  # Image Payload
-            image_binary = image_to_binary(image_payload_dir, cover_img)
+            image_binary = image_to_binary(image_payload_dir, cover_img, max_bits_supported)
             encrypted_key, encrypted_payload = encrypt_image(image_binary)
             encode(cover_img, encrypted_payload)
+
+            # RETURN: Encrypt Key, Image Payload format for program 3 (recovery, decrypting, converting to orig. file)
 
         # Save the new image
         filename, _ = path.splitext(cover_image_dir)

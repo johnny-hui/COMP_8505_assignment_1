@@ -17,3 +17,10 @@ INSUFFICIENT_ARGS_MSG = ("[+] ERROR: Please provide at least one argument for pa
 
 IMG_PAYLOAD_TOO_LARGE_ERROR = ("[+] ERROR: The image payload (dimension-wise) must be smaller than or equal "
                                "to the cover image!")
+RGB_MODE = "RGB"
+IMG_PAYLOAD_NOT_RGB_ERROR = "[+] ERROR: The image payload is not of RGB color mode!"
+IMG_PAYLOAD_TOO_LARGE_IN_BITS_ERROR = ("[+] ERROR: The image payload is too large to support LSB steganography"
+                                       " for the current cover image!")
+MAX_LSB_LIMIT_PER_PIXEL = 24
+BITS_PER_PIXEL_UPPER_BOUND_ERROR = "[+] ERROR: The number of LSBs per pixel (-l) provided cannot exceed 24 bits!"
+BITS_PER_PIXEL_LOWER_BOUND_ERROR = "[+] ERROR: The number of LSBs per pixel (-l) provided cannot be negative or zero!"

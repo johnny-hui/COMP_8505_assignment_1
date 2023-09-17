@@ -92,7 +92,9 @@ def encode(img: Image.Image, payload_in_binary: str):
             img.putpixel((x, y), tuple(pixel))
 
 
-def image_to_binary(img_path: str, cover_img: Image.Image):
+def image_to_binary(img_path: str,
+                    cover_img: Image.Image,
+                    max_bits_supported: int):
     """
     Converts an image to binary
     [SOURCE: Modified code from ChatGPT]
@@ -103,6 +105,9 @@ def image_to_binary(img_path: str, cover_img: Image.Image):
     @param cover_img:
             The Image object of the cover image
 
+    @param max_bits_supported:
+            An integer representing the max number of bits supported for LSB for steganography
+
     @return: binary_data_to_string
             A string containing the binary representation of the image
     """
@@ -110,11 +115,15 @@ def image_to_binary(img_path: str, cover_img: Image.Image):
     # Open the image
     image = Image.open(img_path)
 
+    # Check if image is RGB
+    if image.mode is not constants.RGB_MODE:
+        sys.exit(constants.IMG_PAYLOAD_NOT_RGB_ERROR)
+
     # Check if Image payload meets requirements (Must be smaller or equal)
     if (image.width > cover_img.width) or (image.height > cover_img.height):
         sys.exit(constants.IMG_PAYLOAD_TOO_LARGE_ERROR)
 
-    # Convert each pixel to binary and store in a list
+    # Convert each RGB pixel to binary and store in a list
     binary_data = []
 
     for x in range(image.width):
@@ -127,6 +136,10 @@ def image_to_binary(img_path: str, cover_img: Image.Image):
     binary_data_to_string = ""
     for pixel_in_binary in binary_data:
         binary_data_to_string += pixel_in_binary
+
+    # Check if image bits max bits supported for cover image
+    if len(binary_data_to_string) > max_bits_supported:
+        sys.exit(constants.IMG_PAYLOAD_TOO_LARGE_IN_BITS_ERROR)
 
     return binary_data_to_string
 
@@ -172,7 +185,7 @@ def parse_arguments():
 
     # GetOpt Arguments
     arguments = sys.argv[1:]
-    opts, user_list_args = getopt.getopt(arguments, 'c:i:f:s:l')
+    opts, user_list_args = getopt.getopt(arguments, 'c:i:f:s:l:')
 
     if len(opts) == constants.ZERO:
         sys.exit(constants.NO_ARG_ERROR)
@@ -189,6 +202,10 @@ def parse_arguments():
         if opt == '-l':  # For Number of LSBs per pixel
             try:
                 number_of_bits_per_pixel = int(argument)
+                if number_of_bits_per_pixel > constants.MAX_LSB_LIMIT_PER_PIXEL:
+                    sys.exit(constants.BITS_PER_PIXEL_UPPER_BOUND_ERROR)
+                if number_of_bits_per_pixel <= constants.ZERO:
+                    sys.exit(constants.BITS_PER_PIXEL_LOWER_BOUND_ERROR)
             except ValueError:
                 sys.exit(constants.L_OPTION_INVALID_ARGUMENT_MSG)
 
@@ -196,18 +213,18 @@ def parse_arguments():
     if len(cover_image) == constants.ZERO:
         sys.exit(constants.C_OPTION_INVALID_ARGUMENT_MSG)
 
-    # Check to force user to have at least one other argument
-    if len(extra_image) or len(file_directory) or len(string_payload) == constants.ZERO:
-        sys.exit(constants.INSUFFICIENT_ARGS_MSG)
-
     # Set default LSB bits per pixel == 3 if no args provided
     if number_of_bits_per_pixel == constants.ZERO:
         number_of_bits_per_pixel = constants.LSB_MINIMUM
+
+    print(f"Number of LSBs per pixel to replace: {number_of_bits_per_pixel}")
 
     return cover_image, extra_image, file_directory, string_payload, number_of_bits_per_pixel
 
 
 if __name__ == '__main__':
     img = Image.open("../Pictures/24_bit.png")
-    image_binary = image_to_binary("../Pictures/24_bit.png", img)
-    encrypt_image(image_binary)
+    print(img.mode)
+
+    # image_binary = image_to_binary("../Pictures/24_bit.png", img)
+    # encrypt_image(image_binary)
