@@ -9,6 +9,8 @@ def encrypt_string(payload: str):
     """
     Encrypts a string payload using XOR encryption
 
+    [SOURCE: Modified code from ChatGPT]
+
     @param payload:
             A string representing the payload.
 
@@ -17,8 +19,9 @@ def encrypt_string(payload: str):
     """
     # Declarations
     encrypted_payload = ""
+    payload_type = constants.STRING_EXTENSION
 
-    # Randomly Generate XOR key (in binary)
+    # Predefined XOR key (in binary) for ASCII letter 172
     encryption_key = 0b10101010
 
     # Convert encrypted key to binary
@@ -28,12 +31,23 @@ def encrypt_string(payload: str):
     for i in range(len(payload)):
         encrypted_payload += chr(ord(payload[i]) ^ ord(encryption_key_binary[i % len(encryption_key_binary)]))
 
-    return encryption_key_binary, encrypted_payload
+    # print(encrypted_payload)
+    # 
+    # # Decrypt test
+    # decrypt_test = ""
+    # for i in range(len(encrypted_payload)):
+    #     decrypt_test += chr(ord(encrypted_payload[i]) ^ ord(encryption_key_binary[i % len(encryption_key_binary)]))
+    # 
+    # print(decrypt_test)
+
+    return encryption_key_binary, encrypted_payload, payload_type
 
 
-def encrypt_image(payload_in_binary: str):
+def encrypt(payload_in_binary: str):
     """
-    Encrypts an image payload (already in binary) using XOR encryption
+    Encrypts any payload that is already in binary using XOR encryption
+    (currently used for images and file payload)
+
     [SOURCE: Modified code from ChatGPT]
 
     @param payload_in_binary:
@@ -97,6 +111,7 @@ def image_to_binary(img_path: str,
                     max_bits_supported: int):
     """
     Converts an image to binary
+
     [SOURCE: Modified code from ChatGPT]
 
     @param img_path:
@@ -112,11 +127,12 @@ def image_to_binary(img_path: str,
             A string containing the binary representation of the image
     """
 
-    # Open the image
+    # Open the image and get mode
     image = Image.open(img_path)
+    image_mode = image.mode
 
     # Check if image is RGB
-    if image.mode is not constants.RGB_MODE:
+    if image_mode is not constants.RGB_MODE:
         sys.exit(constants.IMG_PAYLOAD_NOT_RGB_ERROR)
 
     # Check if Image payload meets requirements (Must be smaller or equal)
@@ -137,14 +153,14 @@ def image_to_binary(img_path: str,
     for pixel_in_binary in binary_data:
         binary_data_to_string += pixel_in_binary
 
-    # Check if image bits max bits supported for cover image
+    # Check if image bits supported for cover image
     if len(binary_data_to_string) > max_bits_supported:
         sys.exit(constants.IMG_PAYLOAD_TOO_LARGE_IN_BITS_ERROR)
 
     return binary_data_to_string
 
 
-def payload_to_binary(payload: str, max_bits_supported_by_lsb: int):
+def string_to_binary(payload: str, max_bits_supported_by_lsb: int):
     """
     Converts any payload to binary and provides a check for suitable conditions to perform LSB
 
@@ -163,13 +179,34 @@ def payload_to_binary(payload: str, max_bits_supported_by_lsb: int):
 
     # Convert the encrypted payload to binary (Char -> ASCII Integer -> 8-bit binary conversion per character)
     payload_in_binary = ''.join(format(ord(char), constants.EIGHT_BIT_BINARY) for char in payload)
-    print(f"Number of Bits: {len(payload_in_binary)}")
 
     # CHECK: if payload size is less than max amount of bits supported for LSB
     assert (max_bits_supported_by_lsb >= len(payload_in_binary)), \
         (constants.PAYLOAD_SIZE_TOO_LARGE_ERROR.format(max_bits_supported_by_lsb))
 
     return payload_in_binary
+
+
+def file_to_binary(file_path: str, max_bits_supported: int):
+    try:
+        with open(file_path, constants.READ_BYTE_MODE) as file:
+            binary_data = file.read()
+
+            # Get file metadata for program 3 (recovery)
+            file_name = file.name.split('/')[-1]
+            file_extension = file_name.split('.')[-1]
+
+            # Read each byte and covert into binary
+            file_in_binary = ''.join(format(byte, constants.EIGHT_BIT_BINARY) for byte in binary_data)
+            print(f"[+] Number of bits for {file_name}: {len(file_in_binary)}")
+
+            # CHECK: if payload size is less than max amount of bits supported for LSB
+            assert (max_bits_supported >= len(file_in_binary)), \
+                (constants.PAYLOAD_SIZE_TOO_LARGE_ERROR.format(max_bits_supported))
+
+            return file_in_binary, file_name, file_extension
+    except IOError as e:
+        sys.exit(constants.FILE_OPEN_ERROR.format(e))
 
 
 def parse_arguments():
@@ -217,14 +254,16 @@ def parse_arguments():
     if number_of_bits_per_pixel == constants.ZERO:
         number_of_bits_per_pixel = constants.LSB_MINIMUM
 
-    print(f"Number of LSBs per pixel to replace: {number_of_bits_per_pixel}")
+    print(f"[+] Number of LSBs per pixel to replace: {number_of_bits_per_pixel}")
 
     return cover_image, extra_image, file_directory, string_payload, number_of_bits_per_pixel
 
 
 if __name__ == '__main__':
-    img = Image.open("../Pictures/24_bit.png")
-    print(img.mode)
+    cover_img = Image.open("../test_content/24_bit.png")
+    max_bits = cover_img.height * cover_img.width * 1
 
-    # image_binary = image_to_binary("../Pictures/24_bit.png", img)
-    # encrypt_image(image_binary)
+    file_in_binary_test, file_name_test, file_extension_test = file_to_binary("../test_content/test.txt",
+                                                                              max_bits)
+
+    encrypt_key, encrypt_payload = encrypt(file_in_binary_test)

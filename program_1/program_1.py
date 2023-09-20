@@ -52,4 +52,4 @@ def do_program_1(img_dir: str,
 
 # MAIN (for testing)
 if __name__ == '__main__':
-    do_program_1("../Pictures/24_bit.png", 22)
+    do_program_1("../test_content/24_bit.png", 22)
