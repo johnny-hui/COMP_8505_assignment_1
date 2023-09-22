@@ -1,7 +1,9 @@
 import getopt
+import math
 import random
 import sys
 import constants
+from os import path
 from PIL import Image
 
 
@@ -74,15 +76,20 @@ def encrypt(payload_in_binary: str):
     return encryption_key, encrypted_payload
 
 
-def encode(img: Image.Image, payload_in_binary: str):
+def encode(img: Image.Image,
+           payload_in_binary: str,
+           number_of_lsb_to_replace_per_pixel: int):
     """
-    Encodes (embeds) the payload in the pixels of the image using bitwise operators
+    Encodes (embeds) the payload in the pixels of the image using bitwise operators and shifting
 
     @param img:
             An image object
 
     @param payload_in_binary:
             A string representing the payload (in binary)
+
+    @param number_of_lsb_to_replace_per_pixel:
+            An integer representing number of LSBs per pixel to replace
 
     @return: None
     """
@@ -93,14 +100,24 @@ def encode(img: Image.Image, payload_in_binary: str):
         for y in range(img.height):
             pixel = list(img.getpixel((x, y)))
 
-            # Embed payload bits into the least significant bits of RGB channels (using bitwise operators)
-            for i in range(3):  # <== 0 for Red, 1 for Green, 2 for Blue
-                if payload_index < len(payload_in_binary):
-                    pixel[i] = pixel[i] & ~1 | int(payload_in_binary[payload_index])
-                    payload_index += 1
+            # Reset Critical Variables
+            bit_position = constants.ZERO
+            num_bits_replaced = constants.ZERO
 
-            # IMPLEMENT 2: Darcy wants user to be able to declare how many LSBs per pixels to replace
-            #              (Use While Loop + Counter??)
+            # Embed payload bits into the least significant bits of RGB channels (using bitwise operators)
+            while num_bits_replaced < number_of_lsb_to_replace_per_pixel:
+
+                for i in range(3):  # <== 0 for Red, 1 for Green, 2 for Blue
+                    if num_bits_replaced >= number_of_lsb_to_replace_per_pixel:
+                        break
+
+                    if payload_index < len(payload_in_binary):
+                        pixel[i] = pixel[i] & ~int(math.pow(2,  bit_position)) | int(payload_in_binary[payload_index])
+                        payload_index += 1
+
+                    num_bits_replaced += 1
+
+                bit_position += 1
 
             # Update the pixel in the cover image
             img.putpixel((x, y), tuple(pixel))
@@ -188,6 +205,19 @@ def string_to_binary(payload: str, max_bits_supported_by_lsb: int):
 
 
 def file_to_binary(file_path: str, max_bits_supported: int):
+    """
+    Converts any file to binary bits and performs check for eligibility to perform steganography.
+
+    @param file_path:
+            A string representing the file path
+
+    @param max_bits_supported:
+            An integer representing the max bits supported for current cover image
+
+    @return file_in_binary, file_name, file_extension:
+            The file in binary and metadata for program 3 (recovery and decrypting)
+
+    """
     try:
         with open(file_path, constants.READ_BYTE_MODE) as file:
             binary_data = file.read()
@@ -213,21 +243,24 @@ def parse_arguments():
     """
     Parses arguments from command line
 
-    @return cover_image, extra_image, file_directory, string_payload, number_of_bits_per_pixel:
+    @return is_encrypt, cover_image, extra_image, file_directory, string_payload, number_of_bits_per_pixel:
             The arguments for sufficient for proper functioning of program_2
     """
     # Initialization
-    cover_image, extra_image, file_directory, string_payload = "", "", "", ""
+    is_encrypt, cover_image, extra_image, file_directory, string_payload = False, "", "", "", ""
     number_of_bits_per_pixel = constants.ZERO
 
     # GetOpt Arguments
     arguments = sys.argv[1:]
-    opts, user_list_args = getopt.getopt(arguments, 'c:i:f:s:l:')
+    opts, user_list_args = getopt.getopt(arguments, 'e:c:i:f:s:l:')
 
     if len(opts) == constants.ZERO:
         sys.exit(constants.NO_ARG_ERROR)
 
     for opt, argument in opts:
+        if opt == '-e':
+            if str(argument).lower() == constants.TRUE:
+                is_encrypt = True
         if opt == '-c':  # For Cover Image
             cover_image = argument
         if opt == '-i':  # For Image Payload
@@ -236,6 +269,8 @@ def parse_arguments():
             file_directory = argument
         if opt == '-s':  # For String Payload
             string_payload = argument
+            if len(string_payload) is constants.ZERO:
+                sys.exit(constants.STRING_PAYLOAD_EMPTY_ERROR)
         if opt == '-l':  # For Number of LSBs per pixel
             try:
                 number_of_bits_per_pixel = int(argument)
@@ -254,16 +289,47 @@ def parse_arguments():
     if number_of_bits_per_pixel == constants.ZERO:
         number_of_bits_per_pixel = constants.LSB_MINIMUM
 
+    # Print Configurations
+    __print_config(is_encrypt, number_of_bits_per_pixel)
+
+    return is_encrypt, cover_image, extra_image, file_directory, string_payload, number_of_bits_per_pixel
+
+
+def save_image(cover_img: Image.Image, cover_img_dir: str):
+    filename, _ = path.splitext(cover_img_dir)
+    filename += '_lsb' + constants.PNG_EXTENSION
+    cover_img.save(filename, constants.PNG_FORMAT)
+    print(constants.OPERATION_SUCCESSFUL_MSG)
+
+
+def do_work_strings(cover_img, is_encrypt, max_bits_supported, number_of_lsb_to_replace_per_pixel, string_payload):
+    if is_encrypt:
+        encrypted_key, encrypted_payload, payload_type = encrypt_string(string_payload)
+        encrypted_payload_in_binary = string_to_binary(encrypted_payload, max_bits_supported)
+        encode(cover_img, encrypted_payload_in_binary, number_of_lsb_to_replace_per_pixel)
+        # RETURN: Encrypt Key, Payload Type (string), no. bits/pixel, isEncrypt = True, Original File Name == None
+    else:
+        payload_in_binary = string_to_binary(string_payload, max_bits_supported)
+        encode(cover_img, payload_in_binary, number_of_lsb_to_replace_per_pixel)
+        # RETURN: Encryption Key=None, Payload type (string), no. bits/pixel, isEncrypt = False,
+        #         Original File Name == None
+
+
+def do_work_image_or_file(cover_img, payload_binary, is_encrypted, number_of_lsb_to_replace_per_pixel):
+    if is_encrypted:
+        encrypted_key, encrypted_payload = encrypt(payload_binary)
+        encode(cover_img, encrypted_payload, number_of_lsb_to_replace_per_pixel)
+        # RETURN: Encrypt Key and everything below, isEncrypt == True
+    else:
+        encode(cover_img, payload_binary, number_of_lsb_to_replace_per_pixel)
+
+
+def __print_config(is_encrypt, number_of_bits_per_pixel):
+    print(constants.PROGRAM_CONFIGURATION_BANNER)
+    if is_encrypt is False:
+        print(constants.ENCRYPTION_DISABLED_MSG)
+    else:
+        print(constants.ENCRYPTION_ENABLED_MSG)
+
     print(f"[+] Number of LSBs per pixel to replace: {number_of_bits_per_pixel}")
-
-    return cover_image, extra_image, file_directory, string_payload, number_of_bits_per_pixel
-
-
-if __name__ == '__main__':
-    cover_img = Image.open("../test_content/24_bit.png")
-    max_bits = cover_img.height * cover_img.width * 1
-
-    file_in_binary_test, file_name_test, file_extension_test = file_to_binary("../test_content/test.txt",
-                                                                              max_bits)
-
-    encrypt_key, encrypt_payload = encrypt(file_in_binary_test)
+    print(constants.PROGRAM_CONFIG_ENDING_BANNER)
