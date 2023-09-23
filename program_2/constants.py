@@ -2,11 +2,18 @@ OS_ERROR_MSG = "[+] ERROR: Cannot open file at specified directory!"
 PAYLOAD_SIZE_TOO_LARGE_ERROR = ("[+] ERROR: Payload (in binary) is greater than the bit capacity supported to "
                                 "perform LSB steganography for the current image: {} bits")
 PROGRAM_CONFIGURATION_BANNER = "====================== // PROGRAM CONFIGURATIONS // ======================"
-PROGRAM_CONFIG_ENDING_BANNER = "========================================================================"
+PROGRAM_CONFIG_ENDING_BANNER = "=========================================================================="
 
 PNG_FORMAT = "PNG"
 PNG_EXTENSION = ".png"
-STRING_EXTENSION = "string"
+PNG_EXTENSION_TWO = "png"
+JPG_EXTENSION = "jpg"
+GIF_EXTENSION = "gif"
+TIFF_EXTENSION = "tif"
+
+TYPE_STRING = "string"
+TYPE_IMAGE = "image"
+TYPE_FILE = "file"
 TRUE = "true"
 FILE_WRITE = 'w'
 
@@ -28,8 +35,9 @@ IMG_PAYLOAD_TOO_LARGE_ERROR = ("[+] ERROR: The image payload (dimension-wise) mu
                                "to the cover image!")
 RGB_MODE = "RGB"
 IMG_PAYLOAD_NOT_RGB_ERROR = "[+] ERROR: The image payload is not of RGB color mode!"
-IMG_PAYLOAD_TOO_LARGE_IN_BITS_ERROR = ("[+] ERROR: The image payload is too large to support LSB steganography"
-                                       " for the current cover image!")
+IMG_PAYLOAD_TOO_LARGE_IN_BITS_ERROR = ("[+] ERROR: The image payload (in bits) is too large to support LSB "
+                                       "steganography for the current cover image! Consider increasing the "
+                                       "bits per pixel (-l option).")
 STRING_PAYLOAD_EMPTY_ERROR = "[+] ERROR: The string payload (-s) provided cannot be empty!"
 
 MAX_LSB_LIMIT_PER_PIXEL = 24
@@ -38,6 +46,7 @@ BITS_PER_PIXEL_LOWER_BOUND_ERROR = "[+] ERROR: The number of LSBs per pixel (-l)
 FILE_OPEN_ERROR = "[+] ERROR: An error has occurred while opening the file provided: {}"
 READ_BYTE_MODE = "rb"
 OPERATION_SUCCESSFUL_MSG = "[+] OPERATION COMPLETE: Now terminating program 2..."
+FILE_INVALID_ERROR_MSG = "[+] ERROR: Invalid file format provided for the -f option!"
 
 OPERATION_STRING_MSG = "[+] Now encrypting and encoding string payload into cover image..."
 OPERATION_IMAGE_MSG = "[+] Now encrypting and encoding image payload into cover image..."

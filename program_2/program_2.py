@@ -26,27 +26,27 @@ def do_program_2():
 
         if len(image_payload_dir) is not constants.ZERO:  # Image Payload
             print(constants.OPERATION_IMAGE_MSG)
-            image_binary = image_to_binary(image_payload_dir, cover_img, max_bits_supported)
-            do_work_image_or_file(cover_img, image_binary, isEncrypt, number_of_lsb_to_replace_per_pixel)
+            image_binary, extension_type, file_name = image_to_binary(image_payload_dir, cover_img,
+                                                                      max_bits_supported)
+            metadata_list = do_work_image_or_file(cover_img, image_binary,
+                                                  isEncrypt, number_of_lsb_to_replace_per_pixel,
+                                                  constants.TYPE_IMAGE, extension_type, file_name)
             save_image(cover_img, cover_image_dir)
-            print(constants.OPERATION_SUCCESSFUL_MSG)
+            save_metadata(metadata_list)
             return None
-
-            # RETURN: Encrypt_key, Payload type == Image, Original file name, Extension Type(png, jpg), No. bits/pixel,
-            #         isEncrypt == False
 
         if len(file_payload_dir) is not constants.ZERO:  # File Payload
             print(constants.OPERATION_FILE_MSG)
             file_in_binary, file_name, file_extension = file_to_binary(file_payload_dir, max_bits_supported)
-            do_work_image_or_file(cover_img, file_in_binary, isEncrypt, number_of_lsb_to_replace_per_pixel)
+            metadata_list = do_work_image_or_file(cover_img, file_in_binary,
+                                                  isEncrypt, number_of_lsb_to_replace_per_pixel,
+                                                  constants.TYPE_FILE, file_extension, file_name)
             save_image(cover_img, cover_image_dir)
-            print(constants.OPERATION_SUCCESSFUL_MSG)
+            save_metadata(metadata_list)
             return None
 
-            # RETURN: Encrypt_key == None, Payload Type == File, Extension Type (zip, rar, txt, etc.),
-            #         Original File Name, No. Bits per pixel, isEncrypt == False
-    except OSError:
-        sys.exit(constants.OS_ERROR_MSG)
+    except IOError as e:
+        sys.exit(constants.FILE_OPEN_ERROR.format(e))
 
 
 if __name__ == '__main__':

@@ -22,7 +22,7 @@ def encrypt_string(payload: str):
     """
     # Declarations
     encrypted_payload = ""
-    payload_type = constants.STRING_EXTENSION
+    payload_type = constants.TYPE_STRING
 
     # Predefined XOR key (in binary) for ASCII letter 172
     encryption_key = 0b10101010
@@ -146,9 +146,11 @@ def image_to_binary(img_path: str,
             A string containing the binary representation of the image
     """
 
-    # Open the image and get mode
+    # Open the image and get metadata
     image = Image.open(img_path)
     image_mode = image.mode
+    file_name = image.filename.split('/')[-1]
+    extension_type = file_name.split('.')[-1]
 
     # Check if image is RGB
     if image_mode is not constants.RGB_MODE:
@@ -173,10 +175,11 @@ def image_to_binary(img_path: str,
         binary_data_to_string += pixel_in_binary
 
     # Check if image bits supported for cover image
+    print(f"[+] Number of bits for {file_name}: {len(binary_data_to_string)}")
     if len(binary_data_to_string) > max_bits_supported:
         sys.exit(constants.IMG_PAYLOAD_TOO_LARGE_IN_BITS_ERROR)
 
-    return binary_data_to_string
+    return binary_data_to_string, extension_type, file_name
 
 
 def string_to_binary(payload: str, max_bits_supported_by_lsb: int):
@@ -198,6 +201,7 @@ def string_to_binary(payload: str, max_bits_supported_by_lsb: int):
 
     # Convert the encrypted payload to binary (Char -> ASCII Integer -> 8-bit binary conversion per character)
     payload_in_binary = ''.join(format(ord(char), constants.EIGHT_BIT_BINARY) for char in payload)
+    print(f"[+] Number of bits from payload: {len(payload_in_binary)}")
 
     # CHECK: if payload size is less than max amount of bits supported for LSB
     assert (max_bits_supported_by_lsb >= len(payload_in_binary)), \
@@ -218,8 +222,14 @@ def file_to_binary(file_path: str, max_bits_supported: int):
 
     @return file_in_binary, file_name, file_extension:
             The file in binary and metadata for program 3 (recovery and decrypting)
-
     """
+
+    # Check if file is anything other than an image
+    file_extension = file_path.split('/')[-1].split('.')[-1]
+    if file_extension in [constants.PNG_EXTENSION_TWO, constants.JPG_EXTENSION,
+                          constants.GIF_EXTENSION, constants.TIFF_EXTENSION]:
+        sys.exit(constants.FILE_INVALID_ERROR_MSG)
+
     try:
         with open(file_path, constants.READ_BYTE_MODE) as file:
             binary_data = file.read()
@@ -342,14 +352,17 @@ def do_work_strings(cover_img: Image.Image,
         payload_in_binary = string_to_binary(string_payload, max_bits_supported)
         encode(cover_img, payload_in_binary, number_of_lsb_to_replace_per_pixel)
 
-        return (number_of_lsb_to_replace_per_pixel, is_encrypt, None, constants.STRING_EXTENSION,
+        return (number_of_lsb_to_replace_per_pixel, is_encrypt, None, constants.TYPE_STRING,
                 None, None, string_payload)
 
 
 def do_work_image_or_file(cover_img: Image.Image,
                           payload_binary: str,
                           is_encrypted: bool,
-                          number_of_lsb_to_replace_per_pixel: int):
+                          number_of_lsb_to_replace_per_pixel: int,
+                          payload_type: str,
+                          payload_extension: str,
+                          payload_file_name: str):
     """
     A helper function for program 2 that assists in performing encrypting and encoding logic for
     either Image or File payloads.
@@ -370,14 +383,26 @@ def do_work_image_or_file(cover_img: Image.Image,
     @param number_of_lsb_to_replace_per_pixel:
             An integer representing the number of LSBs to replace per pixel
 
+    @param payload_type:
+            A string representing the payload type ("image" or "file")
+
+    @param payload_extension:
+            A string representing the payload extension (.rar, .txt, .jpg, .png, etc.)
+
+    @param payload_file_name:
+            A string representing the payload file name
+
     @return: None
     """
     if is_encrypted:
         encrypted_key, encrypted_payload = encrypt(payload_binary)
         encode(cover_img, encrypted_payload, number_of_lsb_to_replace_per_pixel)
-        # RETURN: Encrypt Key and everything below, isEncrypt == True
+        return (number_of_lsb_to_replace_per_pixel, is_encrypted, encrypted_key, payload_type,
+                payload_extension, payload_file_name, None)
     else:
         encode(cover_img, payload_binary, number_of_lsb_to_replace_per_pixel)
+        return (number_of_lsb_to_replace_per_pixel, is_encrypted, None, payload_type,
+                payload_extension, payload_file_name, None)
 
 
 def save_image(cover_img: Image.Image, cover_img_dir: str):
@@ -398,6 +423,14 @@ def save_image(cover_img: Image.Image, cover_img_dir: str):
 
 
 def save_metadata(metadata_list: list):
+    """
+    Writes metadata required for program 3 into a text file
+
+    @param metadata_list:
+            A list containing necessary information for program 3
+
+    @return: None
+    """
     current_path = os.getcwd()
     metadata_item_list = [constants.METADATA_ITEM_ONE, constants.METADATA_ITEM_TWO,
                           constants.METADATA_ITEM_THREE, constants.METADATA_ITEM_FOUR,
@@ -427,6 +460,7 @@ def __save_metadata_helper(current_path, index, metadata_item_list, metadata_lis
             index += 1
 
     print(constants.OPERATION_SUCCESSFUL_MSG)
+    print(constants.PROGRAM_CONFIG_ENDING_BANNER)
 
 
 def __print_config(is_encrypt, number_of_bits_per_pixel):
