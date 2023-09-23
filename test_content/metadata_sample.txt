@@ -4,6 +4,7 @@ encryption_key=
 payload_type=
 payload_extension_type=
 payload_file_name=
+<INSERT ORIGINAL STRING PAYLOAD BELOW>
 
 NOTE: For strings, set payload_type=string and payload_file_name=None, payload_extension_type=None
 NOTE: For unencrypted payloads, set is_encrypted=False

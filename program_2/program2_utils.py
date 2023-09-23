@@ -1,5 +1,6 @@
 import getopt
 import math
+import os
 import random
 import sys
 import constants
@@ -112,7 +113,8 @@ def encode(img: Image.Image,
                         break
 
                     if payload_index < len(payload_in_binary):
-                        pixel[i] = pixel[i] & ~int(math.pow(2,  bit_position)) | int(payload_in_binary[payload_index])
+                        complement_bit = int(format(bin(~int(math.pow(2, bit_position)) & 0xFF)), constants.BASE_TWO)
+                        pixel[i] = pixel[i] & complement_bit | int(payload_in_binary[payload_index]) << bit_position
                         payload_index += 1
 
                     num_bits_replaced += 1
@@ -295,33 +297,136 @@ def parse_arguments():
     return is_encrypt, cover_image, extra_image, file_directory, string_payload, number_of_bits_per_pixel
 
 
-def save_image(cover_img: Image.Image, cover_img_dir: str):
-    filename, _ = path.splitext(cover_img_dir)
-    filename += '_lsb' + constants.PNG_EXTENSION
-    cover_img.save(filename, constants.PNG_FORMAT)
-    print(constants.OPERATION_SUCCESSFUL_MSG)
+def do_work_strings(cover_img: Image.Image,
+                    is_encrypt: bool,
+                    max_bits_supported: int,
+                    number_of_lsb_to_replace_per_pixel: int,
+                    string_payload: str):
+    """
+    A helper function for program 2 that assists in performing encrypting and encoding logic for
+    string payloads.
 
+    @postcondition
+    - Saves the steganographed image to the same directory of cover image
+    - Creates a metadata file containing required information for proper functioning of program 3
 
-def do_work_strings(cover_img, is_encrypt, max_bits_supported, number_of_lsb_to_replace_per_pixel, string_payload):
+    @param cover_img:
+            An Image object for the cover image
+
+    @param is_encrypt:
+            A Boolean representing the state whether encryption is on or off
+
+    @param max_bits_supported:
+            An integer representing the maximum number of bits possible for
+            LSB steganography on current cover image
+
+    @param number_of_lsb_to_replace_per_pixel:
+            An integer representing the number of LSBs to replace per pixel
+
+    @param string_payload:
+            A string representing the string payload
+
+    @return (number_of_bits_per_pixel, is_encrypted, encryption_key, payload_type, payload_extension_type,
+             payload_file_name, string_payload)
+
+            A tuple containing the metadata information for program 3
+    """
     if is_encrypt:
         encrypted_key, encrypted_payload, payload_type = encrypt_string(string_payload)
         encrypted_payload_in_binary = string_to_binary(encrypted_payload, max_bits_supported)
         encode(cover_img, encrypted_payload_in_binary, number_of_lsb_to_replace_per_pixel)
-        # RETURN: Encrypt Key, Payload Type (string), no. bits/pixel, isEncrypt = True, Original File Name == None
+
+        return (number_of_lsb_to_replace_per_pixel, is_encrypt, encrypted_key, payload_type,
+                None, None, string_payload)
     else:
         payload_in_binary = string_to_binary(string_payload, max_bits_supported)
         encode(cover_img, payload_in_binary, number_of_lsb_to_replace_per_pixel)
-        # RETURN: Encryption Key=None, Payload type (string), no. bits/pixel, isEncrypt = False,
-        #         Original File Name == None
+
+        return (number_of_lsb_to_replace_per_pixel, is_encrypt, None, constants.STRING_EXTENSION,
+                None, None, string_payload)
 
 
-def do_work_image_or_file(cover_img, payload_binary, is_encrypted, number_of_lsb_to_replace_per_pixel):
+def do_work_image_or_file(cover_img: Image.Image,
+                          payload_binary: str,
+                          is_encrypted: bool,
+                          number_of_lsb_to_replace_per_pixel: int):
+    """
+    A helper function for program 2 that assists in performing encrypting and encoding logic for
+    either Image or File payloads.
+
+    @postcondition
+        - Saves the steganographed image to the same directory of cover image
+        - Creates a metadata file containing required information for proper functioning of program 3
+
+    @param cover_img:
+            An Image object for the cover image
+
+    @param payload_binary:
+            A string representing the string payload
+
+    @param is_encrypted:
+            A Boolean representing the state whether encryption is on or off
+
+    @param number_of_lsb_to_replace_per_pixel:
+            An integer representing the number of LSBs to replace per pixel
+
+    @return: None
+    """
     if is_encrypted:
         encrypted_key, encrypted_payload = encrypt(payload_binary)
         encode(cover_img, encrypted_payload, number_of_lsb_to_replace_per_pixel)
         # RETURN: Encrypt Key and everything below, isEncrypt == True
     else:
         encode(cover_img, payload_binary, number_of_lsb_to_replace_per_pixel)
+
+
+def save_image(cover_img: Image.Image, cover_img_dir: str):
+    """
+    Saves the steganographed image to same directory as the original cover image
+
+    @param cover_img:
+            An Image object for the cover image
+
+    @param cover_img_dir:
+            A string representing the directory/path of the cover image
+
+    @return: None
+    """
+    filename, _ = path.splitext(cover_img_dir)
+    filename += '_lsb' + constants.PNG_EXTENSION
+    cover_img.save(filename, constants.PNG_FORMAT)
+
+
+def save_metadata(metadata_list: list):
+    current_path = os.getcwd()
+    metadata_item_list = [constants.METADATA_ITEM_ONE, constants.METADATA_ITEM_TWO,
+                          constants.METADATA_ITEM_THREE, constants.METADATA_ITEM_FOUR,
+                          constants.METADATA_ITEM_FIVE, constants.METADATA_ITEM_SIX]
+    index = constants.ZERO
+
+    try:
+        os.mkdir(constants.METADATA_DIRECTORY_NAME)
+        print(constants.METADATA_DIRECTORY_CREATED)
+        __save_metadata_helper(current_path, index, metadata_item_list, metadata_list)
+    except FileExistsError:
+        print(constants.DIRECTORY_CREATION_WARNING_MSG)
+        __save_metadata_helper(current_path, index, metadata_item_list, metadata_list)
+
+
+def __save_metadata_helper(current_path, index, metadata_item_list, metadata_list):
+    # Change Directory
+    os.chdir(f"{current_path}/{constants.METADATA_DIRECTORY_NAME}")
+
+    # Perform File Operations
+    with open(constants.METADATA_TEXT_FILE_NAME, constants.FILE_WRITE) as file:
+        for line in metadata_list:
+            if index == len(metadata_item_list):
+                file.write(f'{str(line)}\n')
+                break
+            file.write(f'{metadata_item_list[index]}{str(line)}\n')
+            index += 1
+
+    print(constants.OPERATION_SUCCESSFUL_MSG)
 
 
 def __print_config(is_encrypt, number_of_bits_per_pixel):

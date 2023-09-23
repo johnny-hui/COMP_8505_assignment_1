@@ -1,0 +1,7 @@
+number_of_bits_per_pixel=24
+is_encrypted=True
+encryption_key=10101010
+payload_type=string
+payload_extension_type=None
+payload_file_name=None
+BOjnkjneafaef

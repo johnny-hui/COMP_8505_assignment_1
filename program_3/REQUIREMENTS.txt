@@ -7,5 +7,6 @@ OBJECTIVES:
 
 - Conduct thorough testing to ensure accurate payload decoding and decryption when applicable.
 
-- Validate the correctness of the decoded payload content and offer comprehensive documentation of your testing procedures and results.
+- Validate the correctness of the decoded payload content and offer comprehensive documentation of your testing
+  procedures and results.
 

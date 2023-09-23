@@ -6,12 +6,14 @@ PROGRAM_CONFIG_ENDING_BANNER = "================================================
 
 PNG_FORMAT = "PNG"
 PNG_EXTENSION = ".png"
-STRING_EXTENSION = "str"
+STRING_EXTENSION = "string"
 TRUE = "true"
+FILE_WRITE = 'w'
 
 EIGHT_BIT_BINARY = "08b"
 ZERO = 0
 LSB_MINIMUM = 3
+BASE_TWO = 2
 ENCRYPTED_KEY_LENGTH = 1
 ENCRYPTION_ENABLED_MSG = "[+] Encryption has been enabled!"
 ENCRYPTION_DISABLED_MSG = "[+] Encryption has been disabled!"
@@ -40,3 +42,14 @@ OPERATION_SUCCESSFUL_MSG = "[+] OPERATION COMPLETE: Now terminating program 2...
 OPERATION_STRING_MSG = "[+] Now encrypting and encoding string payload into cover image..."
 OPERATION_IMAGE_MSG = "[+] Now encrypting and encoding image payload into cover image..."
 OPERATION_FILE_MSG = "[+] Now encrypting and encoding file payload into cover image..."
+DIRECTORY_CREATION_WARNING_MSG = "[+] WARNING: A metadata directory already exists within current directory!"
+
+METADATA_DIRECTORY_NAME = "metadata"
+METADATA_DIRECTORY_CREATED = "[+] A /metadata directory has been created (in current directory)!"
+METADATA_TEXT_FILE_NAME = "metadata.txt"
+METADATA_ITEM_ONE = "number_of_bits_per_pixel="
+METADATA_ITEM_TWO = "is_encrypted="
+METADATA_ITEM_THREE = "encryption_key="
+METADATA_ITEM_FOUR = "payload_type="
+METADATA_ITEM_FIVE = "payload_extension_type="
+METADATA_ITEM_SIX = "payload_file_name="
