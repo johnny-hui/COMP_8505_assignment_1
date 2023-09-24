@@ -142,8 +142,8 @@ def image_to_binary(img_path: str,
     @param max_bits_supported:
             An integer representing the max number of bits supported for LSB for steganography
 
-    @return: binary_data_to_string
-            A string containing the binary representation of the image
+    @return: binary_data_to_string, extension_type, file_name, payload_length_bits
+            Necessary metadata information for program 3
     """
 
     # Open the image and get metadata
@@ -175,11 +175,12 @@ def image_to_binary(img_path: str,
         binary_data_to_string += pixel_in_binary
 
     # Check if image bits supported for cover image
-    print(f"[+] Number of bits for {file_name}: {len(binary_data_to_string)}")
-    if len(binary_data_to_string) > max_bits_supported:
+    payload_length_bits = len(binary_data_to_string)
+    print(f"[+] Number of bits for {file_name}: {payload_length_bits}")
+    if payload_length_bits > max_bits_supported:
         sys.exit(constants.IMG_PAYLOAD_TOO_LARGE_IN_BITS_ERROR)
 
-    return binary_data_to_string, extension_type, file_name
+    return binary_data_to_string, extension_type, file_name, payload_length_bits
 
 
 def string_to_binary(payload: str, max_bits_supported_by_lsb: int):
@@ -195,19 +196,20 @@ def string_to_binary(payload: str, max_bits_supported_by_lsb: int):
     @param max_bits_supported_by_lsb:
             An integer representing the maximum bits supported to perform LSB
 
-    @return payload_in_binary:
-            A string representing the payload in binary.
+    @return payload_in_binary, payload_length_bits:
+            A string representing the payload in binary and an integer as payload length.
     """
 
     # Convert the encrypted payload to binary (Char -> ASCII Integer -> 8-bit binary conversion per character)
     payload_in_binary = ''.join(format(ord(char), constants.EIGHT_BIT_BINARY) for char in payload)
-    print(f"[+] Number of bits from payload: {len(payload_in_binary)}")
+    payload_length_bits = len(payload_in_binary)
+    print(f"[+] Number of bits from payload: {payload_length_bits}")
 
     # CHECK: if payload size is less than max amount of bits supported for LSB
-    assert (max_bits_supported_by_lsb >= len(payload_in_binary)), \
+    assert (max_bits_supported_by_lsb >= payload_length_bits), \
         (constants.PAYLOAD_SIZE_TOO_LARGE_ERROR.format(max_bits_supported_by_lsb))
 
-    return payload_in_binary
+    return payload_in_binary, payload_length_bits
 
 
 def file_to_binary(file_path: str, max_bits_supported: int):
@@ -220,7 +222,7 @@ def file_to_binary(file_path: str, max_bits_supported: int):
     @param max_bits_supported:
             An integer representing the max bits supported for current cover image
 
-    @return file_in_binary, file_name, file_extension:
+    @return file_in_binary, file_name, file_extension, payload_length_bits:
             The file in binary and metadata for program 3 (recovery and decrypting)
     """
 
@@ -240,13 +242,14 @@ def file_to_binary(file_path: str, max_bits_supported: int):
 
             # Read each byte and covert into binary
             file_in_binary = ''.join(format(byte, constants.EIGHT_BIT_BINARY) for byte in binary_data)
-            print(f"[+] Number of bits for {file_name}: {len(file_in_binary)}")
 
             # CHECK: if payload size is less than max amount of bits supported for LSB
-            assert (max_bits_supported >= len(file_in_binary)), \
+            payload_length_bits = len(file_in_binary)
+            print(f"[+] Number of bits for {file_name}: {payload_length_bits}")
+            assert (max_bits_supported >= payload_length_bits), \
                 (constants.PAYLOAD_SIZE_TOO_LARGE_ERROR.format(max_bits_supported))
 
-            return file_in_binary, file_name, file_extension
+            return file_in_binary, file_name, file_extension, payload_length_bits
     except IOError as e:
         sys.exit(constants.FILE_OPEN_ERROR.format(e))
 
@@ -343,17 +346,17 @@ def do_work_strings(cover_img: Image.Image,
     """
     if is_encrypt:
         encrypted_key, encrypted_payload, payload_type = encrypt_string(string_payload)
-        encrypted_payload_in_binary = string_to_binary(encrypted_payload, max_bits_supported)
+        encrypted_payload_in_binary, payload_length_bits = string_to_binary(encrypted_payload, max_bits_supported)
         encode(cover_img, encrypted_payload_in_binary, number_of_lsb_to_replace_per_pixel)
 
         return (number_of_lsb_to_replace_per_pixel, is_encrypt, encrypted_key, payload_type,
-                None, None, string_payload)
+                None, None, payload_length_bits, string_payload)
     else:
-        payload_in_binary = string_to_binary(string_payload, max_bits_supported)
+        payload_in_binary, payload_length_bits = string_to_binary(string_payload, max_bits_supported)
         encode(cover_img, payload_in_binary, number_of_lsb_to_replace_per_pixel)
 
         return (number_of_lsb_to_replace_per_pixel, is_encrypt, None, constants.TYPE_STRING,
-                None, None, string_payload)
+                None, None, payload_length_bits, string_payload)
 
 
 def do_work_image_or_file(cover_img: Image.Image,
@@ -362,7 +365,8 @@ def do_work_image_or_file(cover_img: Image.Image,
                           number_of_lsb_to_replace_per_pixel: int,
                           payload_type: str,
                           payload_extension: str,
-                          payload_file_name: str):
+                          payload_file_name: str,
+                          payload_length_bits: int):
     """
     A helper function for program 2 that assists in performing encrypting and encoding logic for
     either Image or File payloads.
@@ -392,17 +396,20 @@ def do_work_image_or_file(cover_img: Image.Image,
     @param payload_file_name:
             A string representing the payload file name
 
+    @param payload_length_bits:
+            An integer representing the number of bits for the binary payload
+
     @return: None
     """
     if is_encrypted:
         encrypted_key, encrypted_payload = encrypt(payload_binary)
         encode(cover_img, encrypted_payload, number_of_lsb_to_replace_per_pixel)
         return (number_of_lsb_to_replace_per_pixel, is_encrypted, encrypted_key, payload_type,
-                payload_extension, payload_file_name, None)
+                payload_extension, payload_file_name, payload_length_bits, None)
     else:
         encode(cover_img, payload_binary, number_of_lsb_to_replace_per_pixel)
         return (number_of_lsb_to_replace_per_pixel, is_encrypted, None, payload_type,
-                payload_extension, payload_file_name, None)
+                payload_extension, payload_file_name, payload_length_bits, None)
 
 
 def save_image(cover_img: Image.Image, cover_img_dir: str):
@@ -434,7 +441,8 @@ def save_metadata(metadata_list: list):
     current_path = os.getcwd()
     metadata_item_list = [constants.METADATA_ITEM_ONE, constants.METADATA_ITEM_TWO,
                           constants.METADATA_ITEM_THREE, constants.METADATA_ITEM_FOUR,
-                          constants.METADATA_ITEM_FIVE, constants.METADATA_ITEM_SIX]
+                          constants.METADATA_ITEM_FIVE, constants.METADATA_ITEM_SIX,
+                          constants.METADATA_ITEM_SEVEN]
     index = constants.ZERO
 
     try:
