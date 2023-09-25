@@ -180,6 +180,7 @@ def image_to_binary(img_path: str,
     if payload_length_bits > max_bits_supported:
         sys.exit(constants.IMG_PAYLOAD_TOO_LARGE_IN_BITS_ERROR)
 
+    image.close()
     return binary_data_to_string, extension_type, file_name, payload_length_bits
 
 
@@ -427,6 +428,7 @@ def save_image(cover_img: Image.Image, cover_img_dir: str):
     filename, _ = path.splitext(cover_img_dir)
     filename += '_lsb' + constants.PNG_EXTENSION
     cover_img.save(filename, constants.PNG_FORMAT)
+    cover_img.close()
 
 
 def save_metadata(metadata_list: list):

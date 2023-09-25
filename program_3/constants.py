@@ -1,0 +1,25 @@
+ZERO = 0
+FILE_READ = "r"
+FILE_OPEN_ERROR = "[+] ERROR: An error has occurred while opening the file provided: {}"
+NO_ARG_ERROR = "[+] NO_ARG_ERROR: No arguments were passed in!"
+C_OPTION_INVALID_ARGUMENT_MSG = "[+] ERROR: No argument was provided for -c (Cover Image) option!"
+F_OPTION_INVALID_ARGUMENT_MSG = "[+] ERROR: No argument was provided for -f (Metadata File) option!"
+
+RGB_MODE = "RGB"
+IMG_PAYLOAD_NOT_RGB_ERROR = "[+] ERROR: The image payload is not of RGB color mode!"
+
+PROGRAM_CONFIGURATION_BANNER = "====================== // PROGRAM CONFIGURATIONS // ======================"
+PROGRAM_CONFIG_ENDING_BANNER = "=========================================================================="
+PROGRAM_CONFIG_STEG_IMG_MSG = "[+] Steganographed Image: {}"
+PROGRAM_CONFIG_METADATA_MSG = "[+] Metadata File: {}"
+
+METADATA_FILE_VALIDATE_FIRST_LINE = "number_of_bits_per_pixel"
+NOT_METADATA_FILE_ERROR = "[+] ERROR: File is not a metadata file from program 2!"
+METADATA_PAYLOAD_LENGTH = "payload_length_bits"
+METADATA_ITEM_ONE = "Number of bits per pixel"
+METADATA_ITEM_TWO = "Is Encrypted"
+METADATA_ITEM_THREE = "Encryption Key"
+METADATA_ITEM_FOUR = "Original Payload Type"
+METADATA_ITEM_FIVE = "Original Payload Extension Type"
+METADATA_ITEM_SIX = "Original Payload File Name"
+METADATA_ITEM_SEVEN = "Original Payload Length Bit"
