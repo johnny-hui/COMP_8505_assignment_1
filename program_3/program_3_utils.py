@@ -1,5 +1,4 @@
 import getopt
-import io
 import os
 import sys
 from PIL import Image
@@ -7,6 +6,12 @@ import constants
 
 
 def parse_arguments():
+    """
+    Parses arguments from command line
+
+    @return cover_image_dir, metadata_file_dir:
+            Strings containing the paths for steganographed image and metadata file
+    """
     # Initialization
     cover_image_dir, metadata_file_dir = "", ""
 
@@ -47,19 +52,31 @@ def parse_arguments():
 
 
 def get_metadata_info(metadata_file_dir: str):
+    """
+    Parses information from metadata file saved from program 2
+
+    @param metadata_file_dir:
+            A string representing the path of the metadata file
+
+    @return metadata_info
+            A list of properties from program 2
+    """
     metadata_info = []
     metadata_item_headers = [constants.METADATA_ITEM_ONE, constants.METADATA_ITEM_TWO, constants.METADATA_ITEM_THREE,
                              constants.METADATA_ITEM_FOUR, constants.METADATA_ITEM_FIVE, constants.METADATA_ITEM_SIX,
-                             constants.METADATA_ITEM_SEVEN]
+                             constants.METADATA_ITEM_SEVEN, constants.METADATA_ITEM_EIGHT]
 
     with open(metadata_file_dir, mode=constants.FILE_READ) as file:
         first_line = file.readline().strip()
 
         if first_line.split("=")[0] == constants.METADATA_FILE_VALIDATE_FIRST_LINE:
             metadata_info.append(int(first_line.split("=")[-1]))
-            for line in file:
+            for line in file:  # Read 2nd line onwards
                 if line.split("=")[0] == constants.METADATA_PAYLOAD_LENGTH:
                     metadata_info.append(int(line.split("=")[-1]))
+                    continue
+                if line.split("=")[0] == constants.METADATA_IMG_PROPERTIES:
+                    metadata_info.append(eval(line.strip().split("=")[-1]))
                     continue
                 metadata_info.append(line.strip().split("=")[-1])
         else:
@@ -71,6 +88,21 @@ def get_metadata_info(metadata_file_dir: str):
 
 
 def decode(cover_img_dir: str, payload_length: int, number_of_lsb_per_pixel: int):
+    """
+    Decodes the binary payload from an LSB steganographed image
+
+    @param cover_img_dir:
+            A string representing the path of steganographed image
+
+    @param payload_length:
+            An integer representing the original payload (bit) length
+
+    @param number_of_lsb_per_pixel:
+            An integer representing the number of LSBs per pixel
+
+    @return extracted_binary_data_str:
+            A string containing the binary bits of the original payload (maybe encrypted)
+    """
     image = Image.open(cover_img_dir)
     total_num_bits_recovered = constants.ZERO
 
@@ -154,6 +186,18 @@ def decrypt_string(encrypt_key: str, encrypted_payload: str):
 
 
 def decrypt(encrypt_key: str, encrypted_payload: str):
+    """
+    Decrypts the original payload by using reverse XOR encryption and a XOR encryption key
+
+    @param encrypt_key:
+            A string representing the XOR key
+
+    @param encrypted_payload:
+            A string containing the original payload in binary bits
+
+    @return decrypted_payload:
+            A string containing the decrypted payload in binary bits
+    """
     decrypted_payload_list = []
 
     # Perform Reverse XOR Encryption on encrypted payload with key (operation in parallel using zip())
@@ -170,7 +214,30 @@ def decrypt(encrypt_key: str, encrypted_payload: str):
     return decrypted_payload
 
 
-def payload_to_image(decrypted_payload: str, file_name: str, file_extension: str):
+def payload_to_image(decrypted_payload: str,
+                     file_name: str,
+                     file_extension: str,
+                     img_properties: list):
+    """
+    Converts the binary representation of the original payload into bytes and
+    encodes them into an image file
+
+    [SOURCES USED: Code from ChatGPT]
+
+    @param decrypted_payload:
+            A string containing the original payload (in binary)
+
+    @param file_name:
+            A string containing the original file name (from metadata)
+
+    @param file_extension:
+            A string containing the file extension (such as .png, .tiff, etc.)
+
+    @param img_properties:
+            A list containing the properties of the original image (Mode, Width, Height)
+
+    @return: None
+    """
     # Split binary bits into 8-bit chunks -> convert each 8-bit chunk back into decimal
     byte_data = bytes(int(decrypted_payload[i:i + 8], 2) for i in range(constants.ZERO,
                                                                         len(decrypted_payload),
@@ -183,10 +250,12 @@ def payload_to_image(decrypted_payload: str, file_name: str, file_extension: str
     # Change Directory
     os.chdir(f"{current_path}/{constants.RECOVERY_DIRECTORY_NAME}")
 
-    # Save bytes into image file
+    # String concatenate new file name
     new_file_name = file_name.split(".")[0]
     new_file_name += constants.RECOVERED_TAG_FILE_NAME + '.' + file_extension
-    image = Image.frombytes('RGB', (300, 225), byte_data)  # ADD FIELDS TO METADATA FILE
+
+    # Save bytes into image file and save
+    image = Image.frombytes(img_properties[0], (img_properties[1], img_properties[2]), byte_data)  # Mode, Width, Height
     image.save(new_file_name)
     image.close()
 
@@ -194,6 +263,22 @@ def payload_to_image(decrypted_payload: str, file_name: str, file_extension: str
 
 
 def payload_to_file(decrypted_payload: str, file_name: str, file_extension: str):
+    """
+    Converts the binary representation of the original payload into bytes and
+    encodes them into any file
+
+    @param decrypted_payload:
+            A string containing the original payload (in binary)
+
+    @param file_name:
+            A string containing the original file name (from metadata)
+
+    @param file_extension:
+            A string containing the file extension (such as .txt, .zip, .rar)
+
+    @return: None
+    """
+
     # Convert binary bits (from string) into bytes
     byte_data = bytes(int(decrypted_payload[i:i + 8], 2) for i in range(constants.ZERO,
                                                                         len(decrypted_payload),
@@ -212,8 +297,8 @@ def payload_to_file(decrypted_payload: str, file_name: str, file_extension: str)
 
     # Create new file and write
     try:
-        with open(new_file_name, constants.MODE_WRITE, encoding=constants.UNICODE_FORMAT) as text_file:
-            text_file.write(byte_data)
+        with open(new_file_name, constants.MODE_WRITE, encoding=constants.UNICODE_FORMAT) as file:
+            file.write(byte_data)
         print(constants.FILE_RECOVERY_SUCCESS_MSG.format(os.getcwd(), new_file_name))
     except IOError as e:
         print(constants.FILE_IO_ERROR.format(e))
@@ -221,10 +306,9 @@ def payload_to_file(decrypted_payload: str, file_name: str, file_extension: str)
 
 def binary_to_string(encrypted_payload: str):
     """
-    Converts 8-bit binary chunks into bytes, then back
-    into a string of characters
+    Converts 8-bit binary chunks into bytes, then back into a string of characters
 
-    [SOURCE: Code from ChatGPT]
+    [SOURCES USED: Code from ChatGPT]
 
     @param encrypted_payload:
             A string containing decoded binary bits recovered from steganographed image

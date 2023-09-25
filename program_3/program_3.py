@@ -5,6 +5,12 @@ from program_3_utils import (parse_arguments, get_metadata_info, decode,
 
 
 def do_program_3():
+    """
+    Performs optional decrypting and recovery of payload (string, file, image)
+    from an LSB steganographed image
+
+    @return None
+    """
     # GetOpts
     cover_img_dir, metadata_file_dir = parse_arguments()
 
@@ -20,10 +26,10 @@ def do_program_3():
 
         if eval(metadata_info[1]) is True:  # If Encrypted
             decrypted_payload = decrypt_string(metadata_info[2], recovered_payload_binary)
-            print(decrypted_payload)
+            print(constants.STRING_RECOVERY_SUCCESS_MSG.format(decrypted_payload))
         else:
             original_payload = binary_to_string(recovered_payload_binary)
-            print({original_payload})
+            print(constants.STRING_RECOVERY_SUCCESS_MSG.format(original_payload))
 
         return None
 
@@ -32,9 +38,9 @@ def do_program_3():
 
         if eval(metadata_info[1]) is True:
             decrypted_payload = decrypt(metadata_info[2], recovered_payload_binary)
-            payload_to_image(decrypted_payload, metadata_info[5], metadata_info[4])
+            payload_to_image(decrypted_payload, metadata_info[5], metadata_info[4], metadata_info[7])
         else:
-            payload_to_image(recovered_payload_binary, metadata_info[5], metadata_info[4])
+            payload_to_image(recovered_payload_binary, metadata_info[5], metadata_info[4], metadata_info[7])
 
         return None
 

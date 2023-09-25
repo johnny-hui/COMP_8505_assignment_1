@@ -6,6 +6,12 @@ from PIL import Image
 
 
 def do_program_2():
+    """
+    Performs embedding and optional encryption of payload into a cover image using Least
+    Significant Bit (LSB) technique
+
+    @return: None
+    """
     try:
         # GetOpts
         (isEncrypt, cover_image_dir, image_payload_dir, file_payload_dir,
@@ -26,12 +32,14 @@ def do_program_2():
 
         if len(image_payload_dir) is not constants.ZERO:  # Image Payload
             print(constants.OPERATION_IMAGE_MSG)
-            image_binary, extension_type, file_name, payload_length_bits = image_to_binary(image_payload_dir,
-                                                                                           cover_img,
-                                                                                           max_bits_supported)
+            (image_binary, extension_type, file_name, payload_length_bits,
+             [image_mode, image_width, image_height]) = image_to_binary(image_payload_dir, cover_img, max_bits_supported)
+
             metadata_list = do_work_image_or_file(cover_img, image_binary,
                                                   isEncrypt, number_of_lsb_to_replace_per_pixel,
-                                                  constants.TYPE_IMAGE, extension_type, file_name, payload_length_bits)
+                                                  constants.TYPE_IMAGE, extension_type, file_name, payload_length_bits,
+                                                  [image_mode, image_width, image_height])
+
             save_image(cover_img, cover_image_dir)
             save_metadata(metadata_list)
             return None
@@ -42,7 +50,8 @@ def do_program_2():
                                                                                             max_bits_supported)
             metadata_list = do_work_image_or_file(cover_img, file_in_binary,
                                                   isEncrypt, number_of_lsb_to_replace_per_pixel,
-                                                  constants.TYPE_FILE, file_extension, file_name, payload_length_bits)
+                                                  constants.TYPE_FILE, file_extension, file_name, payload_length_bits,
+                                                  [])
             save_image(cover_img, cover_image_dir)
             save_metadata(metadata_list)
             return None

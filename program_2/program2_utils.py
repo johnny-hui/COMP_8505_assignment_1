@@ -151,7 +151,7 @@ def image_to_binary(img_path: str,
     if (image.width > cover_img.width) or (image.height > cover_img.height):
         sys.exit(constants.IMG_PAYLOAD_TOO_LARGE_ERROR)
 
-    # Convert each pixel from image to 8 bit binary (one for each channel)
+    # Convert each pixel from image to 8 bit binary (one chunk for each channel)
     binary_data = ''.join(format(pixel, constants.EIGHT_BIT_BINARY) for pixel in image.tobytes())
 
     # Convert binary_data (byte array) to string
@@ -167,7 +167,8 @@ def image_to_binary(img_path: str,
         sys.exit(constants.IMG_PAYLOAD_TOO_LARGE_IN_BITS_ERROR)
 
     image.close()
-    return binary_data_to_string, extension_type, file_name, payload_length_bits
+    return (binary_data_to_string, extension_type, file_name, payload_length_bits,
+            [image_mode, image.width, image.height])
 
 
 def string_to_binary(payload: str, max_bits_supported_by_lsb: int):
@@ -337,13 +338,13 @@ def do_work_strings(cover_img: Image.Image,
         encode(cover_img, encrypted_payload_in_binary, number_of_lsb_to_replace_per_pixel)
 
         return (number_of_lsb_to_replace_per_pixel, is_encrypt, encrypted_key, payload_type,
-                None, None, payload_length_bits, string_payload)
+                None, None, payload_length_bits, None, string_payload)
     else:
         payload_in_binary, payload_length_bits = string_to_binary(string_payload, max_bits_supported)
         encode(cover_img, payload_in_binary, number_of_lsb_to_replace_per_pixel)
 
         return (number_of_lsb_to_replace_per_pixel, is_encrypt, None, constants.TYPE_STRING,
-                None, None, payload_length_bits, string_payload)
+                None, None, payload_length_bits, None, string_payload)
 
 
 def do_work_image_or_file(cover_img: Image.Image,
@@ -353,7 +354,8 @@ def do_work_image_or_file(cover_img: Image.Image,
                           payload_type: str,
                           payload_extension: str,
                           payload_file_name: str,
-                          payload_length_bits: int):
+                          payload_length_bits: int,
+                          image_properties: list):
     """
     A helper function for program 2 that assists in performing encrypting and encoding logic for
     either Image or File payloads.
@@ -386,17 +388,30 @@ def do_work_image_or_file(cover_img: Image.Image,
     @param payload_length_bits:
             An integer representing the number of bits for the binary payload
 
+    @param image_properties:
+            A list containing image properties such as mode, height, width (ONLY FOR IMAGE PAYLOAD)
+
     @return: None
     """
     if is_encrypted:
         encrypted_key, encrypted_payload = encrypt(payload_binary)
         encode(cover_img, encrypted_payload, number_of_lsb_to_replace_per_pixel)
+
+        if payload_type is constants.TYPE_IMAGE:  # If Image, return image properties
+            return (number_of_lsb_to_replace_per_pixel, is_encrypted, encrypted_key, payload_type,
+                    payload_extension, payload_file_name, payload_length_bits, image_properties, None)
+
         return (number_of_lsb_to_replace_per_pixel, is_encrypted, encrypted_key, payload_type,
-                payload_extension, payload_file_name, payload_length_bits, None)
+                payload_extension, payload_file_name, payload_length_bits, None, None)
     else:
         encode(cover_img, payload_binary, number_of_lsb_to_replace_per_pixel)
+
+        if payload_type is constants.TYPE_IMAGE:  # If Image, return image properties
+            return (number_of_lsb_to_replace_per_pixel, is_encrypted, None, payload_type,
+                    payload_extension, payload_file_name, payload_length_bits, image_properties, None)
+
         return (number_of_lsb_to_replace_per_pixel, is_encrypted, None, payload_type,
-                payload_extension, payload_file_name, payload_length_bits, None)
+                payload_extension, payload_file_name, payload_length_bits, None, None)
 
 
 def save_image(cover_img: Image.Image, cover_img_dir: str):
@@ -430,7 +445,7 @@ def save_metadata(metadata_list: list):
     metadata_item_list = [constants.METADATA_ITEM_ONE, constants.METADATA_ITEM_TWO,
                           constants.METADATA_ITEM_THREE, constants.METADATA_ITEM_FOUR,
                           constants.METADATA_ITEM_FIVE, constants.METADATA_ITEM_SIX,
-                          constants.METADATA_ITEM_SEVEN]
+                          constants.METADATA_ITEM_SEVEN, constants.METADATA_ITEM_EIGHT]
     index = constants.ZERO
 
     try:
@@ -449,7 +464,7 @@ def __save_metadata_helper(current_path, index, metadata_item_list, metadata_lis
     # Perform File Operations
     with open(constants.METADATA_TEXT_FILE_NAME, constants.FILE_WRITE) as file:
         for line in metadata_list:
-            if index == len(metadata_item_list):
+            if index == len(metadata_item_list):  # Print string payload (applicable to strings only; "None" if not)
                 file.write(f'{str(line)}\n')
                 break
             file.write(f'{metadata_item_list[index]}{str(line)}\n')
