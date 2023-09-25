@@ -9,4 +9,3 @@ OBJECTIVES:
 
 - Validate the correctness of the decoded payload content and offer comprehensive documentation of your testing
   procedures and results.
-

@@ -54,7 +54,7 @@ OPERATION_FILE_MSG = "[+] Now encrypting and encoding file payload into cover im
 DIRECTORY_CREATION_WARNING_MSG = "[+] WARNING: A metadata directory already exists within current directory!"
 
 METADATA_DIRECTORY_NAME = "metadata"
-METADATA_DIRECTORY_CREATED = "[+] A /metadata directory has been created (in current directory)!"
+METADATA_DIRECTORY_CREATED = "[+] A metadata directory has been created (in current directory)!"
 METADATA_TEXT_FILE_NAME = "metadata.txt"
 METADATA_ITEM_ONE = "number_of_bits_per_pixel="
 METADATA_ITEM_TWO = "is_encrypted="

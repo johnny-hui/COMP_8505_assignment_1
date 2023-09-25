@@ -34,15 +34,6 @@ def encrypt_string(payload: str):
     for i in range(len(payload)):
         encrypted_payload += chr(ord(payload[i]) ^ ord(encryption_key_binary[i % len(encryption_key_binary)]))
 
-    # print(encrypted_payload)
-    # 
-    # # Decrypt test
-    # decrypt_test = ""
-    # for i in range(len(encrypted_payload)):
-    #     decrypt_test += chr(ord(encrypted_payload[i]) ^ ord(encryption_key_binary[i % len(encryption_key_binary)]))
-    # 
-    # print(decrypt_test)
-
     return encryption_key_binary, encrypted_payload, payload_type
 
 
@@ -160,16 +151,10 @@ def image_to_binary(img_path: str,
     if (image.width > cover_img.width) or (image.height > cover_img.height):
         sys.exit(constants.IMG_PAYLOAD_TOO_LARGE_ERROR)
 
-    # Convert each RGB pixel to binary and store in a list
-    binary_data = []
+    # Convert each pixel from image to 8 bit binary (one for each channel)
+    binary_data = ''.join(format(pixel, constants.EIGHT_BIT_BINARY) for pixel in image.tobytes())
 
-    for x in range(image.width):
-        for y in range(image.height):
-            pixel = image.getpixel((x, y))
-            binary_value = "".join(format(channel, constants.EIGHT_BIT_BINARY) for channel in pixel)
-            binary_data.append(binary_value)
-
-    # Convert binary_data (array) to string
+    # Convert binary_data (byte array) to string
     binary_data_to_string = ""
     for pixel_in_binary in binary_data:
         binary_data_to_string += pixel_in_binary
@@ -177,6 +162,7 @@ def image_to_binary(img_path: str,
     # Check if image bits supported for cover image
     payload_length_bits = len(binary_data_to_string)
     print(f"[+] Number of bits for {file_name}: {payload_length_bits}")
+
     if payload_length_bits > max_bits_supported:
         sys.exit(constants.IMG_PAYLOAD_TOO_LARGE_IN_BITS_ERROR)
 
