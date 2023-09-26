@@ -280,9 +280,15 @@ def payload_to_file(decrypted_payload: str, file_name: str, file_extension: str)
     """
 
     # Convert binary bits (from string) into bytes
-    byte_data = bytes(int(decrypted_payload[i:i + 8], 2) for i in range(constants.ZERO,
-                                                                        len(decrypted_payload),
-                                                                        constants.EIGHT_BIT_BINARY)).decode()
+    if file_extension == constants.ZIP_EXTENSION:  # For Zip files
+        byte_data = bytes(int(decrypted_payload[i:i + 8], 2) for i in range(constants.ZERO,
+                                                                            len(decrypted_payload),
+                                                                            constants.EIGHT_BIT_BINARY))
+
+    if file_extension == constants.TXT_EXTENSION:  # For Txt files
+        byte_data = bytes(int(decrypted_payload[i:i + 8], 2) for i in range(constants.ZERO,
+                                                                            len(decrypted_payload),
+                                                                            constants.EIGHT_BIT_BINARY)).decode()
 
     # Make directory to store recovered payload
     current_path = os.getcwd()
@@ -297,8 +303,14 @@ def payload_to_file(decrypted_payload: str, file_name: str, file_extension: str)
 
     # Create new file and write
     try:
-        with open(new_file_name, constants.MODE_WRITE, encoding=constants.UNICODE_FORMAT) as file:
-            file.write(byte_data)
+        if file_extension == constants.ZIP_EXTENSION:  # For Zip files
+            with open(new_file_name, constants.MODE_WRITE_BINARY) as zip_file:
+                zip_file.write(byte_data)
+
+        if file_extension == constants.TXT_EXTENSION:  # For Txt files
+            with open(new_file_name, constants.MODE_WRITE, encoding=constants.UNICODE_FORMAT) as text_file:
+                text_file.write(byte_data)
+
         print(constants.FILE_RECOVERY_SUCCESS_MSG.format(os.getcwd(), new_file_name))
     except IOError as e:
         print(constants.FILE_IO_ERROR.format(e))
@@ -316,9 +328,9 @@ def binary_to_string(encrypted_payload: str):
     @return decoded_string:
             A string containing the original string payload of characters
     """
-    byte_data = bytes(int(encrypted_payload[i:i+8], 2) for i in range(constants.ZERO,
-                                                                      len(encrypted_payload),
-                                                                      constants.EIGHT_BIT_BINARY))
+    byte_data = bytes(int(encrypted_payload[i:i + 8], 2) for i in range(constants.ZERO,
+                                                                        len(encrypted_payload),
+                                                                        constants.EIGHT_BIT_BINARY))
     decoded_string = byte_data.decode(constants.UNICODE_FORMAT)
     return decoded_string
 
