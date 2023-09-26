@@ -198,6 +198,7 @@ def decrypt(encrypt_key: str, encrypted_payload: str):
     @return decrypted_payload:
             A string containing the decrypted payload in binary bits
     """
+    print(constants.DECRYPTION_START_MSG)
     decrypted_payload_list = []
 
     # Perform Reverse XOR Encryption on encrypted payload with key (operation in parallel using zip())
@@ -211,6 +212,7 @@ def decrypt(encrypt_key: str, encrypted_payload: str):
     for bit in decrypted_payload_list:
         decrypted_payload += bit
 
+    print(constants.DECRYPTION_SUCCESS_MSG)
     return decrypted_payload
 
 
@@ -288,7 +290,7 @@ def payload_to_file(decrypted_payload: str, file_name: str, file_extension: str)
     if file_extension == constants.TXT_EXTENSION:  # For Txt files
         byte_data = bytes(int(decrypted_payload[i:i + 8], 2) for i in range(constants.ZERO,
                                                                             len(decrypted_payload),
-                                                                            constants.EIGHT_BIT_BINARY)).decode()
+                                                                            constants.EIGHT_BIT_BINARY))
 
     # Make directory to store recovered payload
     current_path = os.getcwd()
@@ -308,7 +310,7 @@ def payload_to_file(decrypted_payload: str, file_name: str, file_extension: str)
                 zip_file.write(byte_data)
 
         if file_extension == constants.TXT_EXTENSION:  # For Txt files
-            with open(new_file_name, constants.MODE_WRITE, encoding=constants.UNICODE_FORMAT) as text_file:
+            with open(new_file_name, constants.MODE_WRITE_BINARY) as text_file:
                 text_file.write(byte_data)
 
         print(constants.FILE_RECOVERY_SUCCESS_MSG.format(os.getcwd(), new_file_name))

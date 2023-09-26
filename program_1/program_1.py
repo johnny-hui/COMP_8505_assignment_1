@@ -9,9 +9,7 @@ def do_program_1():
     Reads cover image and determines how large a payload can be hidden, given the number of LSBs
     (The Least Significant Bits) per pixel to replace per user choice.
 
-
     @return: None
-
     """
     # Parse Arguments (via. GetOps)
     cover_img_dir, number_of_lsb_to_replace_per_pixel = parse_arguments()
