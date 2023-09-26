@@ -1,6 +1,58 @@
+import getopt
+import os
+
 import constants
 import sys
 from PIL import Image
+
+
+def parse_arguments():
+    # Print Banner
+    print(constants.PROGRAM_CONFIGURATION_BANNER)
+
+    # Initialization
+    cover_img_dir = ""
+    number_of_bits_per_pixel = constants.ZERO
+
+    # GetOpt Arguments
+    arguments = sys.argv[1:]
+    opts, _ = getopt.getopt(arguments, 'c:l:')
+
+    if len(opts) == constants.ZERO:
+        sys.exit(constants.NO_ARG_ERROR)
+
+    for opt, argument in opts:
+        if opt == '-c':  # For Cover Image
+            if os.path.exists(argument):
+                cover_img_dir = argument
+            else:
+                sys.exit(constants.C_OPTION_INVALID_PATH_ERROR)
+        if opt == '-l':  # For Number of LSBs per pixel
+            try:
+                number_of_bits_per_pixel = int(argument)
+                if number_of_bits_per_pixel > constants.MAX_LSB_LIMIT_PER_PIXEL:
+                    sys.exit(constants.BITS_PER_PIXEL_UPPER_BOUND_ERROR)
+                if number_of_bits_per_pixel <= constants.ZERO:
+                    sys.exit(constants.BITS_PER_PIXEL_LOWER_BOUND_ERROR)
+            except ValueError:
+                sys.exit(constants.L_OPTION_INVALID_ARGUMENT_MSG)
+
+    # Check to force user to provide a cover image to perform LSB on
+    if len(cover_img_dir) == constants.ZERO:
+        sys.exit(constants.C_OPTION_INVALID_ARGUMENT_MSG)
+
+    # Set default LSB bits per pixel == 3 if no args provided
+    if number_of_bits_per_pixel == constants.ZERO:
+        print(constants.L_OPTION_NO_ARG_WARNING_MSG)
+        print(constants.L_OPTION_DEFAULT_SETTING_MSG)
+        number_of_bits_per_pixel = constants.LSB_MINIMUM
+
+    # Print Information
+    print(constants.CONFIG_COVER_IMG.format(cover_img_dir))
+    print(constants.CONFIG_BITS_PER_PIXEL.format(number_of_bits_per_pixel))
+    print(constants.PROGRAM_CONFIG_ENDING_BANNER)
+
+    return cover_img_dir, number_of_bits_per_pixel
 
 
 def determine_payload_size(total_pixels: int,
